@@ -77,6 +77,6 @@ La structure du dépôt est la suivante :
 
 Si vous avez des questions ou des remarques sur l'application, vous pouvez nous contacter ici :[charlotte.papelard@gmail.com], [benjamincolson@hotmail.fr], [edgarsaiz24@gmail.com], [issra.fria@gmail.com], [luxonmasseau@hotmail.com]
 
-Veuillez contacter la personne concernée à votre questionnement, sinon contacter par défault le Product Owner ou le Scrum Master.
+Veuillez contacter la personne concernée à votre questionnement, sinon contacter par défaut le Product Owner ou le Scrum Master.
 
   ----
