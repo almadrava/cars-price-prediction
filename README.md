@@ -1,31 +1,69 @@
-# Prédiction du prix d'un véhicule en fonction de ses caractéristiques (Projet académique)
+# Prédiction du prix de revente d'un véhicule d'occasion 
+## Objectif du projet 
 
-Malgré le fait que de plus en plus de personnes changent leurs habitudes au niveau des transports en passant au vélo ou transports en commun. La voiture, quelle soit électrique ou non, reste le moyen de transport le plus utilisé dans le monde et d'autant plus en France. Il n'y a pas moins de 37 880 000 de voitures particulières présentes sur le territoire français. De plus, la centralisation des institutions dans les grandes villes poussent les jeunes provenant des zones rurales à se munir de voitures afin d'effectuer les trajets de la maison familiale à leur lieu d'études ou travail. Cependant de nombreux étudiants réfléchissent à changer de voiture une fois rentré dans le monde professionnel, ils vendent ainsi leur véhicule actuel afin de'avoir les fonds suffisants pour leur futurs achats. Grâce à notre application, les étudiants ou tout autre personne désirant se séparer de leur bien automobiles pourront avoir une estimation de la somme qu'ils peuvent espérer obtenir suite à la vente.
+Le but de cette application est de fournir aux utilisateurs une estimation du prix de revente des véhicules d'occasion en fonction de leurs caractéristiques spécifiques. L'application utilisera un modèle de prédiction entraîné sur des données régulièrement mises à jour garantissant ainsi que les estimations de prix reflètent les tendances actuelles du marché automobile.
 
-Ce projet est effectué dans le cadre de la matière "Gestion de Projet et Produit Digital" lors de la 2ème année du Master SEP (Statistique pour l'Evaluation et la Prévison) 2023/2024 à l'Université de Reims Champagne-Ardenne.
+## Comment configurer 
+### Prérequis
+Assurez-vous d'avoir installé Python sur votre machine. Si ce n'est pas le cas, vous pouvez le télécharger depuis le site officiel de Python.
+### Installation des dépendances
+Exécutez la commande suivante depuis votre terminal pour installer les dépendances nécessaires à l'aide du fichier requirements.txt :
 
-# Structure et méthode choisie
+```markdown
+pip install -r requirements.txt
+```
+## Comment éxecuter 
+Pour utiliser cette application, suivez les étapes ci-dessous :
 
-Ce projet se réalise à l'aide de deux logiciels de programmation qui sont VBA et Python, de nombreux liens seront fait entre les deux logiciels:
+**1.** *Lancement de l'Interface Excel :*
+   - Accédez au répertoire `src/interfaces`.
+   - Exécutez le script VBA `votre_fichier.xlsm` pour ouvrir l'interface Excel.
 
-1) Créaton de la base de données Excel : A l'aide d'une execution d'un script python lancé depuis Excel lançant un scrapping afin d'obtenir les données nécessaires à la  prédiction.
-2) Création d'un formulaire en VBA : Cette deuxième étape consiste à développer un formulaire en VBA qui servira d'interface utilisateur. Ce formulaire permettra aux utilisateurs de saisir des données relatives à un véhicule, telles que sa marque, son modèle, les caractéristiques liées au modèle (nombre de chevaux, options, etc.) et le parcours de vie du véhicule (kilométrage, année de mise en circulation, etc.). Les données saisies par les utilisateurs seront collectées, formatées et stockées.
-3) Lancement de la prédiction du prix : Suite aux données récupérées par le formulaire, le script de prédiction sera lancé récupérant les variables à utilisées par sélection de modèles, régressions logistiques et autres procédés statistiques. Une fois nos variables explicatives récupérées, elles seront utilisés dans la prédiction du prix du véhicule de l'utilisateur.
-4) Création du Dashboard : Python renverra à Excel le prix obtenu et ainsi un dashboard adapté sera proposé à l'utilisateur afin de lui expliquer le prix et de lui permettre de faire une comparaison simple de son véhicule avec les autres.
+**2.** *Entrée des Caractéristiques de la Voiture :*
+   - Une fois l'interface Excel ouverte, entrez les caractéristiques spécifiques de la voiture dans les champs appropriés.
 
-A noter que l'utilisateur peut faire une prédiction autant de fois qu'il le souhaite car elles seront enrigistré dans la base. Cepandant ces premières prédictions seront perdues une fois la base mise à jour par le nouveau scrapping.
+**3.** *Prédiction du Prix :*
+   - Cliquez sur le bouton "Prédire" dans l'interface. Cela déclenchera automatiquement le modèle en arrière-plan, écrit en Python, qui effectuera la prédiction du prix en fonction des caractéristiques entrées.
+
+**4.** *Affichage du Tableau de Bord Excel :*
+   - Un tableau de bord Excel s'affichera, montrant le prix estimé de la voiture ainsi que d'autres visualisations relatives aux données des voitures.
+
+**5.** *Mise à Jour des Données :*
+   - En cas de besoin, cliquez sur le bouton "MAJ" dans l'interface Excel. Cela déclenchera la mise à jour des données pour le modèle, assurant ainsi que les prédictions sont basées sur des données actualisées.
+
+## Éléments spécifiques sur le développement de l'application
+
+**1.** *Collecte et Préparation des Données :*
+   - Collecte des données à partir du site Spoticar via un processus de scrapping.
+   - Nettoyage et préparation des données, incluant le changement du type des variables et la gestion des valeurs manquantes.
+
+**2.** *Réalisation de l'Interface VBA :*
+   - Conception et développement d'une interface VBA permettant aux utilisateurs d'entrer les caractéristiques spécifiques d'une voiture.
+
+**3.** *Algorithme de Prédiction :*
+   - Mise en place d'un premier algorithme de régression linéaire multiple.
+   - Application de modèles de sélection des variables pour déterminer les caractéristiques ayant le plus d'impact sur le prix d'un véhicule.
+   - Finalisation du modèle de prédiction, y compris des tests unitaires pour garantir la précision de l'algorithme.
+
+**4.** *Lien VBA-Python :*
+   - Mise en place de la connexion entre l'interface VBA et le script Python, permettant ainsi à l'interface d'appeler le modèle de prédiction Python pour estimer le prix d'une voiture.
+## Stucture du dépôt 
+La structure du dépôt est la suivante :
+
+- docs/                    
+  - projet.docs : les présentations .pptx de chaque sprint réalisé ainsi que le rapport final de notre projet  
+  - demos/ : répertoire contenant les vidéos de démonstration de chaque partie de notre projet
+  
+- src/               
+  - data/ : répertoire contenant tous les fichiers .csv de notre projet
+  - interfaces : on trouve ici les fichiers .xlsm de l'interface utilisateur et du tableau de bord 
+  - tools : dossier où on retrouve les codes Python (prépartion des données, modèles de prédiction ...)
+- tests/  : tous les tests unitaires réalisés sur nos scripts Python              
+- requirements.txt  : fichier spécifiant tous les packages nécessaires à l'execution des scripts Python
+- README.md          
 
 
 
-Prédiction du Prix du Vehicule : Les données saisies par les utilisateurs enrichiront notre base de données d'origine, une base de données de référence regroupant un nombre élevé de vehicules. Ces données seront utilisées comme entrées pour des algorithmes Python. Ces algorithmes appliqueront des modèles de prédiction du prix de revente possible etc.
-
-Création d'un Tableau de Bord : . Les résultats de la prédiction seront restitués aux utilisateurs sous forme d'un tableau de bord interactif contenant des visualisations des données, notamment des informations sur le prix du vehicule vis-à-vis des vehicules de même marque etc.
-
-## Installation
-
-## Utilisation
-
-Pour tout savoir sur l'utilisation de l'application, nous vous invitons à lire la notice suivante : (à rajouter lien)
 
 ## Contributeurs
 
