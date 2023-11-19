@@ -3,3 +3,5 @@ Pandas
 os
 Openpyxl
 unidecode
+selenium
+lxml
