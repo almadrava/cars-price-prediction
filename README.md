@@ -17,7 +17,7 @@ Pour utiliser cette application, suivez les étapes ci-dessous :
 
 **1.** *Lancement de l'Interface Excel :*
    - Accédez au répertoire `src/interfaces`.
-   - Exécutez le script VBA `votre_fichier.xlsm` pour ouvrir l'interface Excel.
+   - Exécutez le script VBA `cars_interface.xlsm` pour ouvrir l'interface Excel.
 
 **2.** *Entrée des Caractéristiques de la Voiture :*
    - Une fois l'interface Excel ouverte, entrez les caractéristiques spécifiques de la voiture dans les champs appropriés.
