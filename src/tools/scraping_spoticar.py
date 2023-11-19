@@ -9,7 +9,8 @@ Created on Sun Nov 12 13:29:53 2023
 from lxml import etree
 import pandas as pd
 from selenium import webdriver
-import json 
+import json
+import os
 
 def clean(stri):
     stri = stri.replace("['","").replace("']","").replace("[","").replace("]","")
@@ -58,7 +59,23 @@ with webdriver.Chrome() as driver:
                 "prix": details.get('field_vo_prix_base', [None])[0],
             })
         
-raw_data = pd.DataFrame(page_contents)
+new_data = pd.DataFrame(page_contents)
+
+
+# Path to the project folder
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Path to the raw_data.xlsx file
+raw_data_path = os.path.join(project_path, "src", "data", "raw_data.xlsx")
+
+# Load existing data
+try:
+    existing_data = pd.read_excel(raw_data_path)
+except FileNotFoundError:
+    existing_data = pd.DataFrame()
+
+# Merge old and new data
+updated_data = pd.concat([existing_data, new_data], ignore_index=True)
 
 # Store the data in an Excel file
-raw_data.to_excel("raw_data.xlsx", index=False)
+updated_data.to_excel(raw_data_path, index=False)
