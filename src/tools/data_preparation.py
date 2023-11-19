@@ -26,13 +26,26 @@ raw_data= load_excel_data()
 
 ## Cleaning data process
 
-# Replace spaces with hyphens in the "Modele" column
-raw_data['Modèle'] = raw_data['Modèle'].str.replace(' ', '-')
-# Convert the "Couleur" column to lowercase
-raw_data['Couleur'] = raw_data['Couleur'].str.lower()
-#Remove accents from "Marque" column
-raw_data['Marque'] = raw_data['Marque'].apply(unidecode)
+# Remove duplicates in the original dataframe
+raw_data.drop_duplicates(inplace=True)
 
+# Drop rows with missing values
+raw_data.dropna(inplace=True)
+
+# Replace spaces with hyphens in the "modele" column
+raw_data['modele'] = raw_data['modele'].str.replace(' ', '-')
+# Replace spaces with hyphens in the "marque_et_modele" column
+raw_data['marque_et_modele'] = raw_data['marque_et_modele'].str.replace(' ', '-')
+# Replace spaces with hyphens in the "nb_roues_motrices" column
+raw_data['nb_roues_motrices'] = raw_data['nb_roues_motrices'].str.replace(' ', '-')
+# Convert the "couleur" column to lowercase
+raw_data['couleur'] = raw_data['couleur'].str.lower()
+#Remove accents from "marque" column
+raw_data['marque'] = raw_data['marque'].apply(unidecode)
+#Remove accents from "marque_et_modele" column
+raw_data['marque_et_modele'] = raw_data['marque_et_modele'].apply(unidecode)
+#Remove accents from "categorie" column
+raw_data['categorie'] = raw_data['categorie'].apply(unidecode)
 
 #Exporting cleaned data
 def export_cleaned_data(clean_data):
