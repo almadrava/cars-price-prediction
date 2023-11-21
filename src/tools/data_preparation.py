@@ -36,8 +36,6 @@ raw_data.dropna(inplace=True)
 raw_data['modele'] = raw_data['modele'].str.replace(' ', '-')
 # Replace spaces with hyphens in the "marque_et_modele" column
 raw_data['marque_et_modele'] = raw_data['marque_et_modele'].str.replace(' ', '-')
-# Replace spaces with hyphens in the "nb_roues_motrices" column
-raw_data['nb_roues_motrices'] = raw_data['nb_roues_motrices'].str.replace(' ', '-')
 # Convert the "couleur" column to lowercase
 raw_data['couleur'] = raw_data['couleur'].str.lower()
 #Remove accents from "marque" column
@@ -46,6 +44,22 @@ raw_data['marque'] = raw_data['marque'].apply(unidecode)
 raw_data['marque_et_modele'] = raw_data['marque_et_modele'].apply(unidecode)
 #Remove accents from "categorie" column
 raw_data['categorie'] = raw_data['categorie'].apply(unidecode)
+
+# Function to extract only the number from the column and convert it to an integer
+def extract_and_convert(row):
+    try:
+        # Use a regular expression to extract the number
+        number = int(''.join(filter(str.isdigit, row)))
+        return number
+    except ValueError:
+        # Handle cases where the conversion to integer fails
+        return None
+
+# Apply the function to the column "nb_roues_motrices"
+raw_data['nb_roues_motrices'] = raw_data['nb_roues_motrices'].apply(extract_and_convert)
+# Apply the function to the column "critair"
+raw_data['critair'] = raw_data['critair'].apply(extract_and_convert)
+
 
 #Exporting cleaned data
 def export_cleaned_data(clean_data):
