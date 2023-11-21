@@ -1,7 +1,6 @@
-
-Pandas
-os
-Openpyxl
+lxml==4.9.3
+openpyxl==3.1.2
+pandas==2.1.2
 unidecode
-selenium
-lxml
+
+
