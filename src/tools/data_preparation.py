@@ -76,9 +76,7 @@ def export_cleaned_data(clean_data):
     clean_data.to_excel(clean_data_path, index=False)
 
     # Display a message indicating successful export
-    print(f"Cleaned data exported to: {clean_data_path}")
+    #print(f"Cleaned data exported to: {clean_data_path}")
 
 # Call the function to export cleaned data
 export_cleaned_data(raw_data)
-
-print(raw_data.dtypes)
