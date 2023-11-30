@@ -6,17 +6,19 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from numpy import mean
 from numpy import std
-from sklearn.feature_selection import f_regression
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.graphics import tsaplots
 from scipy.stats import shapiro
 from scipy.stats import norm
 from scipy.stats import ttest_ind
+from sklearn.feature_selection import f_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LassoCV
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
 #importation des données et suppression des NA
@@ -109,12 +111,12 @@ print(f"Statistique de Durbin-Watson : {dw_statistic}")
 
 # Vérifier l'hypothèse de linéarité entre la variable réponse et chaque variable explicative
 # Graphiquement :
-columns = X.columns[1:]  # Exclure la colonne constante
+'''columns = X.columns[1:]  # Exclure la colonne constante
 for col in columns:
     fig, ax = plt.subplots(figsize=(8, 6))
     sm.graphics.plot_partregress(endog=y, exog_i=X[col], exog_others=X.drop(col, axis=1), ax=ax, obs_labels=False)
     ax.set_title(f'{col} vs prix')
-    plt.show()
+    plt.show()'''
 
 # Régression linéaire avec transformation log(Prix)
 model_log_price = sm.OLS(np.log(y), X).fit()
@@ -313,5 +315,80 @@ print(f"Erreur de prévision du modèle ridge optimal : {erreur_modele_ridge_opt
 modele_RLM_complet = Ridge(alpha=0)  # Alpha=0 correspond à la régression linéaire sans pénalité
 erreur_modele_RLM_complet = -cross_val_score(modele_RLM_complet, StandardScaler().fit_transform(X),
                                              np.log(data['prix']), scoring='neg_mean_squared_error', cv=10).mean()
+print(f"Erreur de prévision du modèle RLM complet : {erreur_modele_RLM_complet}")
+
+################Lasso_model########################
+
+# Régression Lasso avec cross-validation pour trouver le meilleur alpha (équivalent à lambda en glmnet)
+lasso_cv = LassoCV(cv=10, alphas=np.logspace(-6, 6, 13))
+lasso_cv.fit(StandardScaler().fit_transform(X), np.log(data['prix']))
+
+# Plot du chemin de régularisation
+alphas_lasso = np.logspace(-6, 6, 13)
+plt.figure(figsize=(8, 6))
+plt.semilogx(alphas_lasso, lasso_cv.mse_path_.mean(axis=1))
+plt.xlabel('Alpha')
+plt.ylabel('Mean Squared Error')
+plt.title('Chemin de régularisation (Régression Lasso)')
+plt.show()
+
+# Meilleur alpha
+best_alpha_lasso = lasso_cv.alpha_
+print(f"Meilleur alpha (Lasso) : {best_alpha_lasso}")
+
+# Coefficients avec le meilleur alpha
+lasso_coef = lasso_cv.coef_
+selected_variables_lasso = np.where(lasso_coef != 0)[0]
+selected_variable_names_lasso = X.columns[selected_variables_lasso]
+print("\nVariables sélectionnées (Lasso) :")
+print(selected_variable_names_lasso)
+
+# Erreur de prévision du modèle lasso optimal
+erreur_modele_lasso_opt = lasso_cv.mse_path_.mean(axis=1).min()
+print(f"Erreur de prévision du modèle lasso optimal : {erreur_modele_lasso_opt}")
+
+# Erreur de prévision du modèle RLM complet
+modele_RLM_complet = LinearRegression()
+erreur_modele_RLM_complet = -cross_val_score(modele_RLM_complet, StandardScaler().fit_transform(X),
+                                             np.log(data['prix']), scoring='neg_mean_squared_error', cv=10).mean()
 
 print(f"Erreur de prévision du modèle RLM complet : {erreur_modele_RLM_complet}")
+
+################RandomForest_Model########################
+
+# Régression avec Random Forest
+random_forest = RandomForestRegressor(n_estimators=100, random_state=42)  # Ajuster les hyperparamètres ici
+
+random_forest.fit(X, np.log(data['prix']))
+
+# Prédictions
+predictions_rf = random_forest.predict(X)
+
+# Visualisation de l'importance des fonctionnalités
+feature_importances = random_forest.feature_importances_
+
+# Création d'un DataFrame pour faciliter la visualisation
+importance_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importances})
+
+# Tri par ordre décroissant d'importance
+importance_df = importance_df.sort_values(by='Importance', ascending=False)
+
+# Sélection des variables importantes (seuil arbitraire)
+threshold = 0.02  # Ajustez ce seuil selon vos besoins
+selected_variables_rf = importance_df[importance_df['Importance'] > threshold]['Feature'].values
+
+# Affichage des variables sélectionnées
+print("\nVariables sélectionnées (Random Forest) :")
+print(selected_variables_rf)
+
+# Tracer la barre d'importance avec hue
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Importance', y='Feature', hue='Feature', data=importance_df, palette='viridis', legend=False)
+plt.title('Importance des fonctionnalités (Random Forest)')
+plt.show()
+
+
+# Erreur de prévision du modèle Random Forest
+erreur_modele_rf = -cross_val_score(random_forest, XX, np.log(data['prix']), scoring='neg_mean_squared_error', cv=10).mean()
+
+print(f"Erreur de prévision du modèle Random Forest : {erreur_modele_rf}")
