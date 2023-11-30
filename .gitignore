@@ -1,0 +1,2 @@
+disallow .ds_store file to be push in the project 
+*.DS_STORE
