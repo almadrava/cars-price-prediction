@@ -47,7 +47,7 @@ def scrape_spoticar_data(base_url, num_pages):
 
             # Retrieve the page source using execute_script
             page_source = driver.execute_script("return document.body.innerHTML")
-            dom = etree.HTML(page_source)
+            dom = etree.HML(page_source)
 
             # Convert the page source to a dictionary (JSON)
             json_data = json.loads(dom.xpath("//pre")[0].text)
