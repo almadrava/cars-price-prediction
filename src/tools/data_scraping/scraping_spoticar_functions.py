@@ -47,7 +47,7 @@ def scrape_spoticar_data(base_url, num_pages):
 
             # Retrieve the page source using execute_script
             page_source = driver.execute_script("return document.body.innerHTML")
-            dom = etree.HML(page_source)
+            dom = etree.HTML(page_source)
 
             # Convert the page source to a dictionary (JSON)
             json_data = json.loads(dom.xpath("//pre")[0].text)
@@ -89,17 +89,20 @@ def scrape_spoticar_data(base_url, num_pages):
 # Scrape data using the function
 #new_data = scrape_spoticar_data(base_url, num_pages)
 
-# Path to the project folder
-project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",".."))
+# Get the current script's directory
+#script_directory = os.path.dirname(os.path.abspath(__file__))
 
-# Path to the raw_data.xlsx file
-raw_data_path = os.path.join(project_path,"src", "data", "raw_data.xlsx")
+# Navigate up two levels to access the parent directory of the parent directory (src)
+#project_directory = os.path.dirname(os.path.dirname(script_directory))
+
+# Construct the absolute path using the project directory and navigate to the data folder
+#raw_data_path = os.path.join(project_directory, "data", "raw_data.xlsx")
 
 # Load existing data
-try:
-    existing_data = pd.read_excel(raw_data_path)
-except FileNotFoundError:
-    existing_data = pd.DataFrame()
+#try:
+ #   existing_data = pd.read_excel(raw_data_path)
+#except FileNotFoundError:
+#    existing_data = pd.DataFrame()
 
 def update_excel_data(existing_data, new_data, raw_data_path):
     """
