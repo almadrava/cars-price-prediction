@@ -14,15 +14,15 @@ def load_excel_data():
     """
     # Get the current script's directory
     script_directory = os.path.dirname(os.path.abspath(__file__))
-    print(script_directory)
+    #print(script_directory)
 
     # Navigate up two levels to access the parent directory of the parent directory (src)
     project_directory = os.path.dirname(os.path.dirname(script_directory))
-    print(project_directory)
+    #print(project_directory)
 
     # Construct the absolute path using the project directory and navigate to the data folder
     raw_data_path = os.path.join(project_directory, "data", "raw_data.xlsx")
-    print(raw_data_path)
+    #print(raw_data_path)
 
     # Load the Excel file using pandas
     df = pd.read_excel(raw_data_path)
