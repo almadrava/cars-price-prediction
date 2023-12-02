@@ -59,7 +59,7 @@ La structure du dépôt est la suivante :
   - interfaces : on trouve ici les fichiers .xlsm de l'interface utilisateur et du tableau de bord 
   - tools : dossier où on retrouve les codes Python (prépartion des données, modèles de prédiction ,séléction des modèles...)
 - tests/  : tous les tests unitaires réalisés sur nos scripts Python
-- main.py : ce fichier servira de point d'entrée principal pour l'application. Il contient les fonctions nécessaires pour les utiliser dans le programme principal
+- main_*.py : ces fichiers contiennent les principaux scripts à executer dans notre application       
 - requirements.txt  : fichier spécifiant tous les packages nécessaires à l'execution des scripts Python
 - README.md          
 
