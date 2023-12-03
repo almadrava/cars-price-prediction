@@ -5,7 +5,11 @@ Created on Sun Nov 12 13:29:53 2023
 
 @author: charlottepapelard
 """
-
+"""
+Module: data_scraping_functions.py
+Description: Contains functions for scraping vehicle data from the Spoticar website.
+"""
+# Importing necessary librairies 
 from lxml import etree
 import pandas as pd
 from selenium import webdriver
