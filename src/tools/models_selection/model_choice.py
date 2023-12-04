@@ -1,10 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
-# Importation des bibliothèques et des données
+# Importing necessary librairies
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -15,9 +9,9 @@ from numpy import std
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.graphics import tsaplots
-from scipy.stats import shapiro
-from scipy.stats import norm
-from scipy.stats import ttest_ind
+from scipy.stats import anderson,boxcox,shapiro,norm,ttest_ind
+from statsmodels.graphics.tsaplots import plot_acf
+from sklearn.metrics import r2_score
 from sklearn.feature_selection import f_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import cross_val_score
@@ -26,108 +20,69 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LassoCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
+from src.tools.model_prediction.prediction_model_functions import CarPriceEstimator
 
+# Load and clean data
+data = CarPriceEstimator.load_clean_data()
 
-# In[3]:
-
-
-#importation des données et suppression des NA
-data = pd.read_excel("D:/clean_data.xlsx", sheet_name=0, header=0)
-data = data.dropna()
-
-#Conversion variable qualitative en  booléen
+# Convert qualitative variables to boolean
 data = pd.get_dummies(data, columns=['boite_vitesse', 'categorie'])
 
-# description de la base
+# Display basic information about the data
 print("\ndata.dtypes")
 print(data.dtypes)
 print("\ndata.head()")
 print(data.head())
 
+##########################################################
+############ Multiple linear regression model ############
+##########################################################
 
-# In[4]:
-
-
-#Régression linéaire multiple (RLM)
+# Perform Multiple Linear Regression (MLR)
 X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'nb_vitesses',
                   'puissance_fiscale', 'puissance_physique', 'annee']]
-X_bool = data[['boite_vitesse_manuelle', 'categorie_break', 'categorie_citadine', 'categorie_coupe-cabriolet', 'categorie_familiale', 'categorie_monospace', 'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
-X_prix = data[['prix']]
-
+X_bool = data[['boite_vitesse_manuelle', 'categorie_break', 'categorie_citadine',
+                'categorie_coupe-cabriolet', 'categorie_familiale', 'categorie_monospace',
+                'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
 X = pd.concat([X_numeric, X_bool], axis=1)
 X = sm.add_constant(X)
-
 y = data['prix']
-
-
-# In[5]:
-
 
 modele_RLM = sm.OLS(y, X).fit()
 
-
-# In[6]:
-
-
-# Attributs et résumé du modèle RLM
+# Display attributes and summary of the model
 print("\nmodele_RLM.params")
 print(modele_RLM.params)  # coefficients
 print("\nmodele_RLM.summary")
 print(modele_RLM.summary())
 
-
-# In[7]:
-
-
-# Ordonner les variables explicatives par les valeurs des p-values
-p_values = modele_RLM.pvalues[1:]  # Ignorer la p-value pour l'intercept
+# Order explanatory variables by p-values
+p_values = modele_RLM.pvalues[1:]  # Ignore the p-value for the intercept
 p_values.sort_values()
 
-
-# In[8]:
-
-
-# Matrice de design, calcul de la matrice de corrélation et affichage sous forme de heatmap
-XX = (pd.concat([X_prix, X_bool, X_numeric], axis=1))
+# Design matrix, correlation matrix calculation, and heatmap display
+XX = (pd.concat([X, data[['prix']]], axis=1))
 cor_matrix = XX.corr()
 print(cor_matrix)
 sns.heatmap(cor_matrix, annot=True, cmap='coolwarm')
 plt.show()
 
-# Affichage des premières lignes de la matrice de design XX
+# Display the first rows of the design matrix XX
 print("\nmatrice de design XX")
 print(XX.head())
 
-
-# In[9]:
-
-
-# Récupérer la matrice de conception (design matrix)
+# Perform the F-test using the f_regression function from scikit-learn
 design_matrix = modele_RLM.model.exog
+_, p_values_fisher = f_regression(design_matrix, y)
 
-
-# In[10]:
-
-
-# Effectuer le test F en utilisant la fonction f_regression de scikit-learn
-_, p_values = f_regression(design_matrix, y)
-
-
-# In[11]:
-
-
-# Afficher les p-values
-p_values_dict = dict(zip(X.columns, p_values))
-sorted_p_values = sorted(p_values_dict.items(), key=lambda x: x[1])
+# Display p-values
+p_values_dict = dict(zip(X.columns, p_values_fisher))
+sorted_p_values_fisher = sorted(p_values_dict.items(), key=lambda x: x[1])
 print("\nP-values classées selon le test de Fisher:")
-for name, p_value in sorted_p_values:
+for name, p_value in sorted_p_values_fisher:
     print(f"{name}: {p_value}")
 
-
-# In[12]:
-
-
-# Effectuer le test de Student pour chaque variable explicative
+# Perform Student's t-test for each explanatory variable
 p_values_student = []
 for column in X.columns:
     group1 = y[X[column] == 1]
@@ -135,278 +90,305 @@ for column in X.columns:
     _, p_value = ttest_ind(group1, group0)
     p_values_student.append((column, p_value))
 
-
-# In[13]:
-
-
-# Afficher les p-values du test de Student
+# Display p-values of Student's t-test
 print("\nP-values classées selon le test de Student:")
 sorted_p_values_student = sorted(p_values_student, key=lambda x: x[1])
 for name, p_value in sorted_p_values_student:
     print(f"{name}: {p_value}")
 
-# On n'obtient pas le même classement, il est recommandé de retenir celui de Fisher
-
-
-# In[14]:
-
-
-# Vérifier graphiquement la non-corrélation des erreurs
+# Check for autocorrelation of residuals graphically
 tsaplots.plot_acf(modele_RLM.resid, lags=40)
 plt.title("Autocorrélations des erreurs")
 plt.show()
 
-
-# In[15]:
-
-
-# Tester la non-corrélation (d'ordre 1) des erreurs : test de Durbin-Watson
+# Test for autocorrelation (order 1) of residuals: Durbin-Watson test
 dw_statistic = durbin_watson(modele_RLM.resid)
 print(f"Statistique de Durbin-Watson : {dw_statistic}")
 
 
-# In[16]:
+# Vérifier l'hypothèse de linéarité entre la variable réponse et chaque variable explicative
+# Graphiquement :
+'''columns = X.columns[1:]  # Exclure la colonne constante
+for col in columns:
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sm.graphics.plot_partregress(endog=y, exog_i=X[col], exog_others=X.drop(col, axis=1), ax=ax, obs_labels=False)
+    ax.set_title(f'{col} vs prix')
+    plt.show()'''
 
-
-# Régression linéaire avec transformation log(Prix)
+# Linear regression with log-transformed price
 model_log_price = sm.OLS(np.log(y), X).fit()
 
-# Récupérer les résidus et les valeurs ajustées
+## Retrieve residuals and fitted values
 residuals = model_log_price.resid
 fitted_values = model_log_price.fittedvalues
 
-
-# In[17]:
-
-
-# Créer le graphique des résidus par rapport aux valeurs ajustées
+## Create a scatter plot of residuals against fitted values
 plt.figure(figsize=(8, 6))
 plt.scatter(fitted_values, residuals, alpha=0.7)
-plt.title('Graphique des résidus par rapport aux valeurs ajustées')
-plt.xlabel('Valeurs ajustées (Fitted values)')
-plt.ylabel('Résidus')
+plt.title('Residuals vs Fitted Values Plot')
+plt.xlabel('Fitted Values')
+plt.ylabel('Residuals')
 plt.show()
 
-
-# In[18]:
-
-
-# Vérifier l'hypothèse d'homoscedasticité des erreurs graphiquement
-sm.graphics.plot_fit(modele_RLM, 0)
-plt.title("Vérification de l'homoscedasticité des erreurs")
+## Check for homoscedasticity graphically
+sm.graphics.plot_fit(model_log_price, 0)
+plt.title("Homoscedasticity Check")
 plt.show()
 
-
-# In[19]:
-
-
-# Test d'homoscedasticité de Breusch-Pagan
-_, bp_p_value, _, _ = het_breuschpagan(modele_RLM.resid, modele_RLM.model.exog)
-print(f"p-value du test de Breusch-Pagan : {bp_p_value}")
+## Breusch-Pagan test for homoscedasticity
+_, bp_p_value, _, _ = het_breuschpagan(model_log_price.resid, model_log_price.model.exog)
+print(f"P-value from Breusch-Pagan test: {bp_p_value}")
 
 
-# In[20]:
+# Normal Q-Q plots for residuals with different variable sets
 
-
-#######Normal Q-Q plot##########
-
-#### Graphiquement : normal Q-Q plot 1
+## Q-Q plot 1: All explanatory variables
 sm.qqplot(modele_RLM.resid, line='s')
-plt.title("Normal Q-Q Plot (Toutes les variables explicatives)")
+plt.title("Normal Q-Q Plot (All Explanatory Variables)")
 plt.show()
 
-
-# In[21]:
-
-
-### Graphiquement : normal Q-Q plot 2
-#Régression linéaire multiple (RLM)
+## Q-Q plot 2: Subset of variables
 X_numeric = data[['puissance_physique', 'nb_vitesses', 'annee']]
 X_bool = data[['categorie_coupe-cabriolet']].astype(int)
-
-X = pd.concat([X_numeric,X_bool], axis=1)
-X = sm.add_constant(X)
-
-modele_RLM = sm.OLS(y, X).fit()
-
-# Graphiquement : normal Q-Q plot 2
-sm.qqplot(modele_RLM.resid, line='s')
-plt.title("Normal Q-Q Plot (4 variables les plus corrélées à la variable refférence)")
-plt.show()
-
-
-# In[22]:
-
-
-#### Graphiquement : normal Q-Q plot 3
-#Régression linéaire multiple (RLM)
-X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'puissance_physique', 'annee']]
-X_bool = data[['boite_vitesse_manuelle', 'categorie_citadine', 'categorie_familiale', 'categorie_monospace', 'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
-
 X = pd.concat([X_numeric, X_bool], axis=1)
 X = sm.add_constant(X)
-
 modele_RLM = sm.OLS(y, X).fit()
-
-# Graphiquement : normal Q-Q plot 3
 sm.qqplot(modele_RLM.resid, line='s')
-plt.title("Normal Q-Q Plot (Pvalue < 400)")
+plt.title("Normal Q-Q Plot (Subset of Variables)")
 plt.show()
 
+## Q-Q plot 3: Another subset of variables
+X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'puissance_physique', 'annee']]
+X_bool = data[['boite_vitesse_manuelle', 'categorie_citadine', 'categorie_familiale', 'categorie_monospace', 'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
+X = pd.concat([X_numeric, X_bool], axis=1)
+X = sm.add_constant(X)
+modele_RLM = sm.OLS(y, X).fit()
+sm.qqplot(modele_RLM.resid, line='s')
+plt.title("Normal Q-Q Plot (Another Subset of Variables)")
+plt.show()
 
-# In[23]:
-
-
-# Histogramme versus densité normale
-residus = modele_RLM.resid
-plt.hist(residus, bins='auto', density=True, alpha=0.7, color='blue', edgecolor='black')
+# Histogram vs. normal density
+residuals = modele_RLM.resid
+plt.hist(residuals, bins='auto', density=True, alpha=0.7, color='blue', edgecolor='black')
 xmin, xmax = plt.xlim()
 x = np.linspace(xmin, xmax, 100)
-p = norm.pdf(x, mean(residus), std(residus))
+p = norm.pdf(x, mean(residuals), std(residuals))
 plt.plot(x, p, 'k', linewidth=2)
-title = "Histogramme des résidus et densité normale"
+title = "Histogram of Residuals and Normal Density"
 plt.title(title)
 plt.show()
 
-
-# In[24]:
-
-
-# Test de Shapiro-Wilk pour tester l'hypothèse de normalité du terme d'erreur
+# Shapiro-Wilk test for normality of residuals
 shapiro_stat, shapiro_p_value = shapiro(modele_RLM.resid)
-print(f"Statistique de test de Shapiro-Wilk : {shapiro_stat}")
-print(f"P-value du test de Shapiro-Wilk : {shapiro_p_value}")
+print(f"Shapiro-Wilk Test Statistic: {shapiro_stat}")
+print(f"P-value from Shapiro-Wilk Test: {shapiro_p_value}")
 
+#######################################################################
+############ AIC-BIC model selection for linear regression ############
+#######################################################################
 
-# In[25]:
+# Numerical variables
+X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'nb_vitesses',
+                  'puissance_fiscale', 'puissance_physique', 'annee']]
 
+# Boolean variables
+X_bool = data[['boite_vitesse_manuelle', 'categorie_break', 'categorie_citadine', 'categorie_coupe-cabriolet',
+               'categorie_familiale', 'categorie_monospace', 'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
 
-################Lasso_model########################
+# Design matrix without intercept
+X = pd.concat([X_numeric, X_bool], axis=1)
+X = sm.add_constant(X)
 
-# Régression Lasso avec cross-validation pour trouver le meilleur alpha (équivalent à lambda en glmnet)
+# Model selection with AIC
+best_aic = float('inf')
+best_aic_model = None
+best_aic_n_variables = None
+for i in range(2, X.shape[1] + 1):
+    model = LinearRegression()
+    scores = cross_val_score(model, X, y, cv=i, scoring='neg_mean_squared_error')
+    aic = 2 * i - 2 * np.sum(scores)
+    if aic < best_aic:
+        best_aic = aic
+        best_aic_model = model
+        best_aic_n_variables = i
+
+# Fit the optimal AIC model on the complete data
+best_aic_model.fit(X, y)
+
+# Display coefficients
+print("\nOptimal model with AIC (Optimal number of variables =", best_aic_n_variables, "):")
+print("\nCoefficients:", best_aic_model.coef_)
+print("\nIntercept:", best_aic_model.intercept_)
+
+# Model selection with BIC
+best_bic = float('inf')
+best_bic_model = None
+best_bic_n_variables = None
+for i in range(2, X.shape[1] + 1):
+    model = LinearRegression()
+    scores = cross_val_score(model, X, y, cv=i, scoring='neg_mean_squared_error')
+    bic = i * np.log(X.shape[0]) - 2 * np.sum(scores)
+    if bic < best_bic:
+        best_bic = bic
+        best_bic_model = model
+        best_bic_n_variables = i
+
+# Fit the optimal BIC model on the complete data
+best_bic_model.fit(X, y)
+
+# Display coefficients
+print("\nOptimal model with BIC (Optimal number of variables =", best_bic_n_variables, "):")
+print("\nCoefficients:", best_bic_model.coef_)
+print("\nIntercept:", best_bic_model.intercept_)
+
+# Column names
+column_names = X.columns
+
+# Display column names and their coefficients for the AIC model
+print("\nOptimal model with AIC:")
+for name, coef in zip(column_names, best_aic_model.coef_):
+    print(f"{name}: {coef}")
+
+# Display column names and their coefficients for the BIC model
+print("\nOptimal model with BIC:")
+for name, coef in zip(column_names, best_bic_model.coef_):
+    print(f"{name}: {coef}")
+
+# Display variable names for the optimal AIC model
+selected_variables_aic = X.columns[best_aic_model.coef_ != 0]
+print("\nVariables selected by AIC:", selected_variables_aic)
+
+# Display variable names for the optimal BIC model
+selected_variables_bic = X.columns[best_bic_model.coef_ != 0]
+print("\nVariables selected by BIC:", selected_variables_bic)
+
+#####################################################
+############ Ridge-Lasso model selection ############
+#####################################################
+
+# Ridge regression with cross-validation for finding the best alpha
+
+# Define the range of alpha values
+alphas = np.logspace(-6, 6, 13)
+
+# Create Ridge regression model
+reg_ridge = Ridge()
+
+# Perform grid search with cross-validation
+parameters = {'alpha': alphas}
+reg_cv_ridge = GridSearchCV(reg_ridge, parameters, cv=10, scoring='neg_mean_squared_error')
+reg_cv_ridge.fit(StandardScaler().fit_transform(X), np.log(data['prix']))
+
+# Plot the regularization path
+plt.figure(figsize=(8, 6))
+plt.semilogx(alphas, reg_cv_ridge.cv_results_['mean_test_score'])
+plt.xlabel('Alpha')
+plt.ylabel('Negative Mean Squared Error')
+plt.title('Regularization Path (Ridge Regression)')
+plt.show()
+
+# Best alpha
+best_alpha = reg_cv_ridge.best_params_['alpha']
+print(f"Best alpha: {best_alpha}")
+
+# Coefficients with the best alpha
+reg_ridge_best_alpha = Ridge(alpha=best_alpha)
+reg_ridge_best_alpha.fit(StandardScaler().fit_transform(X), np.log(data['prix']))
+
+# Selected variables (non-zero coefficients)
+ridge_coef = reg_ridge_best_alpha.coef_
+selected_variables = np.where(ridge_coef != 0)[0]
+selected_variable_names = X.columns[selected_variables]
+print("\nSelected variables (Ridge):")
+print(selected_variable_names)
+
+# Prediction error of the optimal ridge model
+erreur_modele_ridge_opt = -reg_cv_ridge.best_score_
+print(f"Prediction error of the optimal ridge model: {erreur_modele_ridge_opt}")
+
+# Prediction error of the complete RLM model
+modele_RLM_complet = Ridge(alpha=0)  # Alpha=0 corresponds to linear regression without penalty
+erreur_modele_RLM_complet = -cross_val_score(modele_RLM_complet, StandardScaler().fit_transform(X),
+                                             np.log(data['prix']), scoring='neg_mean_squared_error', cv=10).mean()
+print(f"Prediction error of the complete RLM model: {erreur_modele_RLM_complet}")
+
+# Lasso regression with cross-validation for finding the best alpha
+
+# Create LassoCV model with 10-fold cross-validation and specified alpha values
 lasso_cv = LassoCV(cv=10, alphas=np.logspace(-6, 6, 13))
 lasso_cv.fit(StandardScaler().fit_transform(X), np.log(data['prix']))
 
-# Plot du chemin de régularisation
+# Plot the regularization path
 alphas_lasso = np.logspace(-6, 6, 13)
 plt.figure(figsize=(8, 6))
 plt.semilogx(alphas_lasso, lasso_cv.mse_path_.mean(axis=1))
 plt.xlabel('Alpha')
 plt.ylabel('Mean Squared Error')
-plt.title('Chemin de régularisation (Régression Lasso)')
+plt.title('Regularization Path (Lasso Regression)')
 plt.show()
 
-
-# In[42]:
-
-
-# Faire des prédictions sur les données d'entraînement
-predictions = lasso_cv.predict(StandardScaler().fit_transform(X))
-
-# Calculer le coefficient de détermination R²
-r2 = r2_score(np.log(data['prix']), predictions)
-
-# Afficher le résultat
-print("Le coefficient de détermination R² est :", r2)
-
-
-# In[26]:
-
-
-# Meilleur alpha
+# Best alpha
 best_alpha_lasso = lasso_cv.alpha_
-print(f"Meilleur alpha (Lasso) : {best_alpha_lasso}")
+print(f"Best alpha (Lasso): {best_alpha_lasso}")
 
-# Coefficients avec le meilleur alpha
+# Coefficients with the best alpha
 lasso_coef = lasso_cv.coef_
 selected_variables_lasso = np.where(lasso_coef != 0)[0]
 selected_variable_names_lasso = X.columns[selected_variables_lasso]
-print("\nVariables sélectionnées (Lasso) :")
+print("\nSelected variables (Lasso):")
 print(selected_variable_names_lasso)
 
-
-# In[27]:
-
-
-# Erreur de prévision du modèle lasso optimal
+# Prediction error of the optimal lasso model
 erreur_modele_lasso_opt = lasso_cv.mse_path_.mean(axis=1).min()
-print(f"Erreur de prévision du modèle lasso optimal : {erreur_modele_lasso_opt}")
+print(f"Prediction error of the optimal lasso model: {erreur_modele_lasso_opt}")
 
-# Erreur de prévision du modèle RLM complet
+# Prediction error of the complete RLM model
 modele_RLM_complet = LinearRegression()
 erreur_modele_RLM_complet = -cross_val_score(modele_RLM_complet, StandardScaler().fit_transform(X),
                                              np.log(data['prix']), scoring='neg_mean_squared_error', cv=10).mean()
 
-print(f"Erreur de prévision du modèle RLM complet : {erreur_modele_RLM_complet}")
+print(f"Prediction error of the complete RLM model: {erreur_modele_RLM_complet}")
 
+########################################################
+############ Random Forest Regression Model ############
+########################################################
 
-# In[29]:
+# Create Random Forest model with 100 estimators and specified random state
+random_forest = RandomForestRegressor(n_estimators=100, random_state=42)
 
-
-################RandomForest_Model########################
-
-# Régression avec Random Forest
-random_forest = RandomForestRegressor(n_estimators=100, random_state=42)  # Ajuster les hyperparamètres ici
-
+# Fit the model to the data
 random_forest.fit(X, np.log(data['prix']))
 
-# Prédictions
+# Make predictions
 predictions_rf = random_forest.predict(X)
 
-
-
-# In[30]:
-
-
-# Visualisation de l'importance des fonctionnalités
+# Visualize feature importance
 feature_importances = random_forest.feature_importances_
 
-# Création d'un DataFrame pour faciliter la visualisation
+# Create a DataFrame for better visualization
 importance_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importances})
 
-
-# In[31]:
-
-
-# Tri par ordre décroissant d'importance
+# Sort by descending order of importance
 importance_df = importance_df.sort_values(by='Importance', ascending=False)
 
-# Sélection des variables importantes (seuil arbitraire)
-threshold = 0.02  # Ajustez ce seuil selon vos besoins
+# Select important variables (arbitrary threshold)
+threshold = 0.02  # Adjust this threshold as needed
 selected_variables_rf = importance_df[importance_df['Importance'] > threshold]['Feature'].values
 
-
-# In[32]:
-
-
-# Affichage des variables sélectionnées
-print("\nVariables sélectionnées (Random Forest) :")
+# Display selected variables
+print("\nSelected variables (Random Forest):")
 print(selected_variables_rf)
 
-
-# In[34]:
-
-
-# Tracer la barre d'importance avec hue
+# Plot the importance bar with hue
 plt.figure(figsize=(10, 6))
-sns.barplot(x='Importance', y='Feature', hue='Feature', data=importance_df, palette='viridis')
-plt.title('Importance des fonctionnalités (Random Forest)')
+sns.barplot(x='Importance', y='Feature', hue='Feature', data=importance_df, palette='viridis', legend=False)
+plt.title('Feature Importance (Random Forest)')
 plt.show()
 
-
-# In[35]:
-
-
-# Erreur de prévision du modèle Random Forest
+# Prediction error of the Random Forest model
 erreur_modele_rf = -cross_val_score(random_forest, XX, np.log(data['prix']), scoring='neg_mean_squared_error', cv=10).mean()
 
-print(f"Erreur de prévision du modèle Random Forest : {erreur_modele_rf}")
-
-
-# In[41]:
-
-
-from sklearn.metrics import r2_score
+print(f"Prediction error of the Random Forest model: {erreur_modele_rf}")
 
 # Calculer le coefficient de détermination R²
 r2 = r2_score(np.log(data['prix']), predictions_rf)
@@ -414,295 +396,137 @@ r2 = r2_score(np.log(data['prix']), predictions_rf)
 # Afficher le résultat
 print("Le coefficient de détermination R² est :", r2)
 
+################################################################
+# We opt for the Random Forest model since it has the optimal  R²
+################################################################
 
-# In[43]:
-
-
-# Le modele choisi est donc le RandomForest car meilleur R² et meilleure erreur de prevision 
-# Calculer les résidus
+# Residual analysis and diagnostics
 residuals = np.log(data['prix']) - predictions_rf
 
-# Graphique QQ Normalite
+# QQ Plot for normality
 sm.qqplot(residuals, line='s')
 plt.show()
 
-
-# In[45]:
-
-
-from statsmodels.graphics.tsaplots import plot_acf
-
-# Fonction d'autocorrélation
+# Autocorrelation function plot
 plot_acf(residuals, lags=20)
 plt.show()
 
-
-# In[46]:
-
-
-# Graphique de résidus vs. prédictions autocorrelation individu 
+# Residuals vs. Predictions scatter plot for individual autocorrelation
 plt.scatter(predictions_rf, residuals)
 plt.axhline(y=0, color='r', linestyle='--')
-plt.xlabel('Prédictions')
-plt.ylabel('Résidus')
+plt.xlabel('Predictions')
+plt.ylabel('Residuals')
 plt.show()
 
-
-# In[47]:
-
-
-# Graphique de résidus vs. prédictions homoscedasticite
+# Residuals vs. Predictions scatter plot for homoscedasticity
 plt.scatter(predictions_rf, residuals)
 plt.axhline(y=0, color='r', linestyle='--')
-plt.xlabel('Prédictions')
-plt.ylabel('Résidus')
+plt.xlabel('Predictions')
+plt.ylabel('Residuals')
 plt.show()
 
-
-# In[48]:
-
-
-# Test de normalité
+# Normality test (Shapiro-Wilk)
 _, p_value = shapiro(residuals)
-print("Test de normalité (Shapiro-Wilk) p-value :", p_value)
+print("Normality test (Shapiro-Wilk) p-value:", p_value)
 
-
-# In[49]:
-
-
-# Test de Durbin-Watson
+# Durbin-Watson test
 dw_statistic = durbin_watson(residuals)
-print("Test de Durbin-Watson :", dw_statistic)
+print("Durbin-Watson test:", dw_statistic)
 
-
-# In[54]:
-
-
-################### Test #########################
-
-
-# In[55]:
-
-
-from scipy.stats import anderson
-
-# Calculer les résidus
-residuals = np.log(data['prix']) - predictions_rf
-
-# Test d'Anderson-Darling
+# Anderson-Darling test
 result = anderson(residuals)
-print("Statistic d'Anderson-Darling :", result.statistic)
-print("P-value :", result.critical_values)
+print("Anderson-Darling test statistic:", result.statistic)
+print("P-value:", result.critical_values)
 
-
-# In[56]:
-
-
-from scipy.stats import boxcox
-
-# Appliquer la transformation de Box-Cox à la variable dépendante
+# Box-Cox transformation
 transformed_prices, lambda_value = boxcox(data['prix'])
 
-# Utiliser le modèle de régression avec la variable dépendante transformée
+# Regression model with transformed dependent variable
 random_forest.fit(X, np.log(transformed_prices))
 
-
-# In[57]:
-
-
-# Prédictions
+# Predictions
 predictions_test = random_forest.predict(X)
 residualstest = np.log(data['prix']) - predictions_test
 
-
-# In[58]:
-
-
-# Test d'Anderson-Darling
+# Anderson-Darling test after Box-Cox transformation
 result = anderson(residualstest)
-print("Statistic d'Anderson-Darling :", result.statistic)
-print("P-value :", result.critical_values)
+print("Anderson-Darling test statistic:", result.statistic)
+print("P-value:", result.critical_values)
 
-
-# In[59]:
-
-
-# Calculer les résidus
+# Calculate residuals
 residuals = np.log(data['prix']) - predictions_rf
 
-# Calculer les résidus standardisés
+# Calculate standardized residuals
 standardized_residuals = residuals / np.std(residuals)
 
-
-# In[60]:
-
-
-# Identifier les indices des valeurs aberrantes
+# Identify indices of outliers
 outlier_indices = np.where(np.abs(standardized_residuals) > 3)[0]
 
-# Supprimer les valeurs aberrantes
+# Remove outliers
 X_no_outliers = np.delete(X, outlier_indices, axis=0)
 y_no_outliers = np.delete(np.log(data['prix']), outlier_indices)
 
-
-# In[61]:
-
-
-# Créer une nouvelle instance de RandomForestRegressor
+# Create a new instance of RandomForestRegressor
 random_forest_no_outliers = RandomForestRegressor(n_estimators=100, random_state=42)
 
-# Ajuster le modèle sur les données sans les valeurs aberrantes
+# Fit the model without outliers
 random_forest_no_outliers.fit(X_no_outliers, y_no_outliers)
 
-
-# In[62]:
-
-
-# Prédictions sans les valeurs aberrantes
+# Predictions without outliers
 predictions_rf_no_outliers = random_forest_no_outliers.predict(X_no_outliers)
 
-# Calculer les nouveaux résidus
+# Calculate new residuals
 residuals_no_outliers = y_no_outliers - predictions_rf_no_outliers
 
-
-# In[63]:
-
-
-# Graphique QQ Normalite
+# QQ Plot for normality without outliers
 sm.qqplot(residuals_no_outliers, line='s')
 plt.show()
 
-
-# In[64]:
-
-
-# Fonction d'autocorrélation
+# Autocorrelation function plot without outliers
 plot_acf(residuals_no_outliers, lags=20)
 plt.show()
 
-
-# In[66]:
-
-
-# Graphique de résidus vs. prédictions autocorrelation individu 
+# Scatter plot of residuals vs. predictions without outliers
 plt.scatter(predictions_rf_no_outliers, residuals_no_outliers)
 plt.axhline(y=0, color='r', linestyle='--')
-plt.xlabel('Prédictions')
-plt.ylabel('Résidus')
+plt.xlabel('Predictions')
+plt.ylabel('Residuals')
 plt.show()
 
-
-# In[67]:
-
-
-# Test de normalité
+# Normality test without outliers
 _, p_value = shapiro(residuals_no_outliers)
-print("Test de normalité (Shapiro-Wilk) p-value :", p_value)
+print("Normality test without outliers (Shapiro-Wilk) p-value:", p_value)
 
-
-# In[68]:
-
-
-# Test d'Anderson-Darling
+# Anderson-Darling test without outliers
 result = anderson(residuals_no_outliers)
-print("Statistic d'Anderson-Darling :", result.statistic)
-print("P-value :", result.critical_values)
+print("Anderson-Darling test statistic without outliers:", result.statistic)
+print("P-value:", result.critical_values)
 
-
-# In[69]:
-
-
-X
-
-
-# In[72]:
-
-
-# Appliquer la transformation de Box-Cox à la variable dépendante
+# Box-Cox transformation without outliers
 transformed_prices, lambda_value = boxcox(y_no_outliers)
 
-
-
-# In[73]:
-
-
-# Utiliser le modèle de régression avec la variable dépendante transformée
+# Regression model with transformed dependent variable without outliers
 random_forest.fit(X_no_outliers, transformed_prices)
 
-
-# In[74]:
-
-
-# Prédictions
+# Predictions without outliers
 predictions_test = random_forest.predict(X_no_outliers)
 residualstest = transformed_prices - predictions_test
 
-
-# In[75]:
-
-
-# Test de normalité
+# Normality test after Box-Cox transformation without outliers
 _, p_value = shapiro(residualstest)
-print("Test de normalité (Shapiro-Wilk) p-value :", p_value)
+print("Normality test without outliers (Shapiro-Wilk) p-value:", p_value)
 
-
-# In[76]:
-
-
-# Test d'Anderson-Darling
+# Anderson-Darling test after Box-Cox transformation without outliers
 result = anderson(residualstest)
-print("Statistic d'Anderson-Darling :", result.statistic)
-print("P-value :", result.critical_values)
+print("Anderson-Darling test statistic without outliers:", result.statistic)
+print("P-value:", result.critical_values)
 
-
-# In[77]:
-
-
-######### Resultats final ######
-
-
-# In[ ]:
-
-
-######### Modele final Random Forest sans les outliers ######
-
-
-# In[78]:
-
-
+# Final Random Forest model without outliers feature importances
 feature_importances = random_forest_no_outliers.feature_importances_
 
-# Afficher l'importance des variables
+# Display variable importance
 for i, importance in enumerate(feature_importances):
     print(f"Variable {i+1}: Importance = {importance}")
 
-
-# In[79]:
-
-
-X_no_outliers
-
-
-# In[80]:
-
-
+# Create a DataFrame for the features without outliers
 df_X_no_outliers = pd.DataFrame(X_no_outliers)
-
-
-# In[81]:
-
-
-df_X_no_outliers
-
-
-# In[82]:
-
-
-X
-
-
-# In[ ]:
-
-
-
-
