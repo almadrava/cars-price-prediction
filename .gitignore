@@ -1,4 +1,5 @@
 .idea/
 *.log
 *.pyc
-__pycache__/
+src/tools/data_preparation/__pycache__/
+src/tools/model_prediction/__pycache__/
