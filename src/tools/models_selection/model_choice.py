@@ -105,16 +105,6 @@ plt.show()
 dw_statistic = durbin_watson(modele_RLM.resid)
 print(f"Statistique de Durbin-Watson : {dw_statistic}")
 
-
-# Vérifier l'hypothèse de linéarité entre la variable réponse et chaque variable explicative
-# Graphiquement :
-'''columns = X.columns[1:]  # Exclure la colonne constante
-for col in columns:
-    fig, ax = plt.subplots(figsize=(8, 6))
-    sm.graphics.plot_partregress(endog=y, exog_i=X[col], exog_others=X.drop(col, axis=1), ax=ax, obs_labels=False)
-    ax.set_title(f'{col} vs prix')
-    plt.show()'''
-
 # Linear regression with log-transformed price
 model_log_price = sm.OLS(np.log(y), X).fit()
 
