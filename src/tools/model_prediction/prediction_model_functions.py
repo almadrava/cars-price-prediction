@@ -142,5 +142,6 @@ class CarPriceEstimator:
         estimated_price = self.rf_model.predict([[marque_et_modele, cylindree, categorie, annee, boite_vitesse, carburant,
                                                   kilometrage, nb_places, nb_portes, nb_vitesses, puissance_fiscale,
                                                   puissance_physique]])
+        estimated_price = round(estimated_price[0])
 
         return estimated_price
