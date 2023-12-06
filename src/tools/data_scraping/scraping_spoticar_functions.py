@@ -121,6 +121,6 @@ def update_excel_data(existing_data, new_data, raw_data_path):
     updated_data = pd.concat([existing_data, new_data], ignore_index=True, axis=0).reset_index(drop=True)
 
     # Store the data in an Excel file
-    updated_data.to_excel(raw_data_path, index=False)
+    updated_data.to_csv(raw_data_path, index=False)
 
 #update_excel_data(existing_data, new_data, raw_data_path)

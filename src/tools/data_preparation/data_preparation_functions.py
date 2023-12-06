@@ -21,11 +21,11 @@ def load_excel_data():
     #print(project_directory)
 
     # Construct the absolute path using the project directory and navigate to the data folder
-    raw_data_path = os.path.join(project_directory, "data", "raw_data.xlsx")
+    raw_data_path = os.path.join(project_directory, "data", "raw_data.csv")
     #print(raw_data_path)
 
     # Load the Excel file using pandas
-    df = pd.read_excel(raw_data_path)
+    df = pd.read_csv(raw_data_path)
 
     # Return the DataFrame
     return df
@@ -105,10 +105,10 @@ def export_cleaned_data(clean_data):
     project_directory = os.path.dirname(os.path.dirname(script_directory))
 
     # Construct the relative path for the clean data file
-    clean_data_path = os.path.join(project_directory , 'data/clean_data.xlsx')
+    clean_data_path = os.path.join(project_directory , 'data/clean_data.csv')
 
     # Export the cleaned DataFrame to a new Excel file
-    clean_data.to_excel(clean_data_path, index=False)
+    clean_data.to_csv(clean_data_path, index=False)
 
 
 
