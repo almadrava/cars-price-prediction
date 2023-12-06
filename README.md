@@ -7,7 +7,23 @@ Le but de cette application est de fournir aux utilisateurs une estimation du pr
 ### Prérequis
 Assurez-vous d'avoir installé Python sur votre machine. Si ce n'est pas le cas, vous pouvez le télécharger depuis le site officiel de Python.
 ### Installation des dépendances
-Exécutez la commande suivante depuis votre terminal pour installer les dépendances nécessaires à l'aide du fichier requirements.txt :
+1. Ajoutez le chemin d'installation de Python à la variable d'environnement `PYTHON_HOME`. Vous pouvez le faire en suivant ces étapes :
+   
+   - Sur Windows :
+     - Allez dans les Paramètres système avancés.
+     - Cliquez sur "Variables d'environnement".
+     - Dans la section "Variables système", recherchez la variable "Path" et cliquez sur "Modifier".
+     - Cliquez sur "Nouveau" et ajoutez le chemin d'installation de Python (par exemple, `C:\Python39`).
+     - Cliquez sur "OK" pour fermer les fenêtres.
+
+   - Sur Linux/Mac :
+     - Ouvrez votre fichier de profil shell (comme `~/.bashrc` ou `~/.zshrc`).
+     - Ajoutez la ligne suivante :
+       ```bash
+       export PYTHON_HOME=/chemin/vers/votre/python
+       ```
+     - Sourcez votre fichier de profil ou redémarrez votre terminal.
+2. Exécutez la commande suivante depuis votre terminal pour installer les dépendances nécessaires à l'aide du fichier requirements.txt :
 
 ```markdown
 pip install -r requirements.txt
@@ -17,7 +33,7 @@ Pour utiliser cette application, suivez les étapes ci-dessous :
 
 **1.** *Lancement de l'Interface Excel :*
    - Accédez au répertoire `src/interfaces`.
-   - Exécutez le script VBA `cars_interface.xlsm` pour ouvrir l'interface Excel.
+   - Exécutez le script VBA `script_vba.xlsm` pour ouvrir l'interface Excel.
 
 **2.** *Entrée des Caractéristiques de la Voiture :*
    - Une fois l'interface Excel ouverte, entrez les caractéristiques spécifiques de la voiture dans les champs appropriés.
