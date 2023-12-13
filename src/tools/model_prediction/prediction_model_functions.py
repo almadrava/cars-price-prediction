@@ -83,8 +83,11 @@ class CarPriceEstimator:
 
         script_directory = os.path.dirname(os.path.abspath(__file__))
 
-        with open(os.path.join(script_directory, 'rf_model.pkl'), 'wb') as file:
-            pickle.dump(rf_model, file)
+        # Set the directory name to save the model
+        saved_model_directory = os.path.join(script_directory, 'saved model and encoders')
+
+        #with open(os.path.join(saved_model_directory, 'rf_model.pkl'), 'wb') as file:
+         #   pickle.dump(rf_model, file)
 
     def estimate_car_price(self, marque_et_modele, cylindree, categorie, annee, boite_vitesse, carburant,
                            kilometrage, nb_places, nb_portes, nb_vitesses, puissance_fiscale, puissance_physique):
@@ -108,11 +111,17 @@ class CarPriceEstimator:
         Returns:
         numpy.ndarray: The estimated car price.
         """
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'categorical_encoders.pkl'), 'rb') as file:
+        # Get the script directory
+        script_directory = os.path.dirname(os.path.abspath(__file__))
+        # Set the directory name to save the model
+        saved_model_directory = os.path.join(script_directory, 'saved model and encoders')
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'saved model and encoders/categorical_encoders.pkl'), 'rb') as file:
             self.categorical_encoders = pickle.load(file)
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quantitative_encoders.pkl'), 'rb') as file:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'saved model and encoders/quantitative_encoders.pkl'), 'rb') as file:
             self.quantitative_encoders = pickle.load(file)
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rf_model.pkl'), 'rb') as file:
+        with open(os.path.join(saved_model_directory, 'rf_model.pkl'), 'rb') as file:
             self.rf_model = pickle.load(file)
 
         marque_et_modele = self.categorical_encoders['marque_et_modele'].get(marque_et_modele, 0)
