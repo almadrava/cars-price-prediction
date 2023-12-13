@@ -5,27 +5,39 @@ import os
 from unidecode import unidecode
 
 ## Importing the data
+import os
+import pandas as pd
+
 def load_excel_data():
     """
-        Load data from the Excel file and return a DataFrame.
+    Load the latest  data from the CSV file and return a DataFrame.
 
-        Returns:
-        pandas.DataFrame: The DataFrame containing the data loaded from the Excel file.
+    Returns:
+    pandas.DataFrame: The DataFrame containing the latest data loaded from the CSV file.
     """
     # Get the current script's directory
     script_directory = os.path.dirname(os.path.abspath(__file__))
-    #print(script_directory)
 
     # Navigate up two levels to access the parent directory of the parent directory (src)
     project_directory = os.path.dirname(os.path.dirname(script_directory))
-    #print(project_directory)
 
-    # Construct the absolute path using the project directory and navigate to the data folder
-    raw_data_path = os.path.join(project_directory, "data", "raw_data.csv")
-    #print(raw_data_path)
+    # Construct the absolute path using the project directory and navigate to the archived_data folder
+    archived_data_directory = os.path.join(project_directory, "data", "latest_data")
 
-    # Load the Excel file using pandas
-    df = pd.read_csv(raw_data_path)
+    # Get the list of files in the latest_data directory
+    files = os.listdir(archived_data_directory)
+
+    # Filter out non-CSV files
+    csv_files = [file for file in files if file.endswith(".csv")]
+
+    # Sort the CSV files by modification time to get the latest one
+    latest_csv_file = max(csv_files, key=lambda x: os.path.getmtime(os.path.join(archived_data_directory, x)))
+
+    # Construct the absolute path to the latest CSV file
+    latest_csv_path = os.path.join(archived_data_directory, latest_csv_file)
+
+    # Load the latest CSV file using pandas
+    df = pd.read_csv(latest_csv_path)
 
     # Return the DataFrame
     return df

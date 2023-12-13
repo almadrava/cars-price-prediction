@@ -24,13 +24,17 @@ script_directory = os.path.dirname(os.path.abspath(__file__))
 project_directory = os.path.join(script_directory, 'src')
 
 # Construct the absolute path using the project directory and navigate to the data folder
-raw_data_path = os.path.join(project_directory, "data", "raw_data.csv")
+raw_data_directory = os.path.join(project_directory, "data")
 
-# Load existing data
+# Define the new directory
+new_directory = os.path.join(project_directory, "data", "latest_data")
+
+
+existing_data_path = os.path.join(raw_data_directory, "raw_data.csv")
 try:
-    existing_data = pd.read_csv(raw_data_path)
+    existing_data = pd.read_csv(existing_data_path)
 except FileNotFoundError:
     existing_data = pd.DataFrame()
 
 # Update data
-update_excel_data(existing_data, new_data, raw_data_path)
+update_excel_data(existing_data, new_data, new_directory)

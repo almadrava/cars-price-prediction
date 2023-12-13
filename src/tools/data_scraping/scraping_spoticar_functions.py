@@ -9,11 +9,12 @@ Created on Sun Nov 12 13:29:53 2023
 Module: data_scraping_functions.py
 Description: Contains functions for scraping vehicle data from the Spoticar website.
 """
-# Importing necessary librairies 
+# Importing necessary librairies
 from lxml import etree
 import pandas as pd
 from selenium import webdriver
 import json
+from datetime import datetime
 import os
 
 
@@ -83,44 +84,24 @@ def scrape_spoticar_data(base_url, num_pages):
     return pd.DataFrame(page_contents)
 
 
-# Example usage:
-# URL of the first page
-#base_url = "https://www.spoticar.fr/api/vehicleoffers/paginate/search?page="
-
-# Total number of pages to iterate through
-#num_pages = 1  # You can adjust this number according to your needs
-
-# Scrape data using the function
-#new_data = scrape_spoticar_data(base_url, num_pages)
-
-# Get the current script's directory
-#script_directory = os.path.dirname(os.path.abspath(__file__))
-
-# Navigate up two levels to access the parent directory of the parent directory (src)
-#project_directory = os.path.dirname(os.path.dirname(script_directory))
-
-# Construct the absolute path using the project directory and navigate to the data folder
-#raw_data_path = os.path.join(project_directory, "data", "raw_data.xlsx")
-
-# Load existing data
-#try:
- #   existing_data = pd.read_excel(raw_data_path)
-#except FileNotFoundError:
-#    existing_data = pd.DataFrame()
-
-def update_excel_data(existing_data, new_data, raw_data_path):
+def update_excel_data(existing_data, new_data, new_directory):
     """
-    Update existing Excel data with new data and store the result.
+    Update existing CSV data with new data and store the result.
 
     Parameters:
     - existing_data (pd.DataFrame): Existing DataFrame to be updated.
     - new_data (pd.DataFrame): New DataFrame to be added.
-    - raw_data_path (str): Path to the raw_data.xlsx file.
+    - archive_directory (str): Directory where archived raw_data files are stored.
     """
 
+    # Concatenate existing data with new data
     updated_data = pd.concat([existing_data, new_data], ignore_index=True, axis=0).reset_index(drop=True)
 
-    # Store the data in an Excel file
-    updated_data.to_csv(raw_data_path, index=False)
+    # Get the current date and time
+    current_datetime = datetime.now().strftime("%Y%m%d%H%M%S")
 
-#update_excel_data(existing_data, new_data, raw_data_path)
+    # Construct the file name with the current date and time
+    raw_data_path = f"raw_data_{current_datetime}.csv"
+
+    # Store the updated data in a new CSV file
+    updated_data.to_csv(os.path.join(new_directory, raw_data_path), index=False)

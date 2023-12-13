@@ -6,7 +6,7 @@ def main():
     """
     Main script for data preparation.
 
-    This script loads raw data from an Excel file, performs cleaning steps,
+    This script loads raw data from a CSV file, performs cleaning steps,
     extracts and converts specific columns, and exports the cleaned data to a new Excel file.
 
     Usage:
