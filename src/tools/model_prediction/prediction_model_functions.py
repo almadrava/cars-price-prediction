@@ -22,15 +22,15 @@ class CarPriceEstimator:
 
     def load_clean_data(self):
         """
-        Load clean car data from an Excel file and return a DataFrame.
+        Load clean car data from a CSV file and return a DataFrame.
 
         Returns:
         pandas.DataFrame: The DataFrame containing the clean data for modeling.
         """
         script_directory = os.path.dirname(os.path.abspath(__file__))
         project_directory = os.path.dirname(os.path.dirname(script_directory))
-        raw_data_path = os.path.join(project_directory, "data", "clean_data.xlsx")
-        df = pd.read_excel(raw_data_path)
+        raw_data_path = os.path.join(project_directory, "data", "clean_data.csv")
+        df = pd.read_csv(raw_data_path)
         return df
 
     def preprocess_data(self, data):
