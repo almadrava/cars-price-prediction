@@ -1,12 +1,11 @@
 ## Importing librairies
 
-import pandas as pd
-import os
 from unidecode import unidecode
+import os
+import pandas as pd
 
 ## Importing the data
-import os
-import pandas as pd
+
 
 def load_excel_data():
     """
