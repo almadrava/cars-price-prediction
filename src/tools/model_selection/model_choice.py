@@ -20,12 +20,11 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LassoCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-#from src.tools.model_prediction.prediction_model_functions import CarPriceEstimator
+from src.tools.model_prediction.prediction_model_functions import CarPriceEstimator
 
 # Load and clean data
-#data = CarPriceEstimator.load_clean_data()
-data = pd.read_excel("clean_data.xlsx", sheet_name=0, header=0)
-data = data.dropna()
+data = CarPriceEstimator.load_clean_data()
+
 
 # Convert qualitative variable to numerical using impact encoding
 def impact_encode(data, column, target):
