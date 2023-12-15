@@ -20,13 +20,27 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LassoCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from src.tools.model_prediction.prediction_model_functions import CarPriceEstimator
+#from src.tools.model_prediction.prediction_model_functions import CarPriceEstimator
 
 # Load and clean data
-data = CarPriceEstimator.load_clean_data()
+#data = CarPriceEstimator.load_clean_data()
+data = pd.read_excel("clean_data.xlsx", sheet_name=0, header=0)
+data = data.dropna()
 
-# Convert qualitative variables to boolean
-data = pd.get_dummies(data, columns=['boite_vitesse', 'categorie'])
+# Convert qualitative variable to numerical using impact encoding
+def impact_encode(data, column, target):
+    encoding_map = data.groupby(column)[target].mean().to_dict()
+    data[column + '_encoded'] = data[column].map(encoding_map)
+    data = data.drop(column, axis=1)
+    return data
+
+# List of qualitative variables to encode
+qualitative_variables = ['marque_et_modele', 'marque', 'couleur', 'critair', 'boite_vitesse', 'categorie', 'nb_roues_motrices']  # 'marque_et_modele' column <=> 'modele' column
+
+# Apply 'impact encoding' to each qualitative variable
+for var in qualitative_variables:
+    data = impact_encode(data, var, 'prix')
+
 
 # Display basic information about the data
 print("\ndata.dtypes")
@@ -41,11 +55,13 @@ print(data.head())
 # Perform Multiple Linear Regression (MLR)
 X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'nb_vitesses',
                   'puissance_fiscale', 'puissance_physique', 'annee']]
-X_bool = data[['boite_vitesse_manuelle', 'categorie_break', 'categorie_citadine',
-                'categorie_coupe-cabriolet', 'categorie_familiale', 'categorie_monospace',
-                'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
-X = pd.concat([X_numeric, X_bool], axis=1)
+X_encoded = data[['marque_et_modele_encoded', 'marque_encoded','couleur_encoded','critair_encoded',
+                  'boite_vitesse_encoded', 'categorie_encoded','nb_roues_motrices_encoded']]
+X_prix = data[['prix']]
+
+X = pd.concat([X_numeric, X_encoded], axis=1)
 X = sm.add_constant(X)
+
 y = data['prix']
 
 modele_RLM = sm.OLS(y, X).fit()
@@ -61,7 +77,7 @@ p_values = modele_RLM.pvalues[1:]  # Ignore the p-value for the intercept
 p_values.sort_values()
 
 # Design matrix, correlation matrix calculation, and heatmap display
-XX = (pd.concat([X, data[['prix']]], axis=1))
+XX = (pd.concat([X_prix, X_encoded, X_numeric], axis=1))
 cor_matrix = XX.corr()
 print(cor_matrix)
 sns.heatmap(cor_matrix, annot=True, cmap='coolwarm')
@@ -120,11 +136,6 @@ plt.xlabel('Fitted Values')
 plt.ylabel('Residuals')
 plt.show()
 
-## Check for homoscedasticity graphically
-sm.graphics.plot_fit(model_log_price, 0)
-plt.title("Homoscedasticity Check")
-plt.show()
-
 ## Breusch-Pagan test for homoscedasticity
 _, bp_p_value, _, _ = het_breuschpagan(model_log_price.resid, model_log_price.model.exog)
 print(f"P-value from Breusch-Pagan test: {bp_p_value}")
@@ -135,26 +146,6 @@ print(f"P-value from Breusch-Pagan test: {bp_p_value}")
 ## Q-Q plot 1: All explanatory variables
 sm.qqplot(modele_RLM.resid, line='s')
 plt.title("Normal Q-Q Plot (All Explanatory Variables)")
-plt.show()
-
-## Q-Q plot 2: Subset of variables
-X_numeric = data[['puissance_physique', 'nb_vitesses', 'annee']]
-X_bool = data[['categorie_coupe-cabriolet']].astype(int)
-X = pd.concat([X_numeric, X_bool], axis=1)
-X = sm.add_constant(X)
-modele_RLM = sm.OLS(y, X).fit()
-sm.qqplot(modele_RLM.resid, line='s')
-plt.title("Normal Q-Q Plot (Subset of Variables)")
-plt.show()
-
-## Q-Q plot 3: Another subset of variables
-X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'puissance_physique', 'annee']]
-X_bool = data[['boite_vitesse_manuelle', 'categorie_citadine', 'categorie_familiale', 'categorie_monospace', 'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
-X = pd.concat([X_numeric, X_bool], axis=1)
-X = sm.add_constant(X)
-modele_RLM = sm.OLS(y, X).fit()
-sm.qqplot(modele_RLM.resid, line='s')
-plt.title("Normal Q-Q Plot (Another Subset of Variables)")
 plt.show()
 
 # Histogram vs. normal density
@@ -176,18 +167,6 @@ print(f"P-value from Shapiro-Wilk Test: {shapiro_p_value}")
 #######################################################################
 ############ AIC-BIC model selection for linear regression ############
 #######################################################################
-
-# Numerical variables
-X_numeric = data[['cylindree', 'kilometrage', 'nb_places', 'nb_portes', 'nb_vitesses',
-                  'puissance_fiscale', 'puissance_physique', 'annee']]
-
-# Boolean variables
-X_bool = data[['boite_vitesse_manuelle', 'categorie_break', 'categorie_citadine', 'categorie_coupe-cabriolet',
-               'categorie_familiale', 'categorie_monospace', 'categorie_suv-4x4', 'categorie_utilitaire']].astype(int)
-
-# Design matrix without intercept
-X = pd.concat([X_numeric, X_bool], axis=1)
-X = sm.add_constant(X)
 
 # Model selection with AIC
 best_aic = float('inf')
